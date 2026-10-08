@@ -47,9 +47,8 @@ const isHome = here === norm(base);
         <a class="navlink" data-active={isActive('/opinions') || undefined} href={`${base}opinions`}>opns</a>
         <a class="navlink" data-active={isActive('/about') || undefined} href={`${base}about`}>about</a>
         <a class="navlink" data-active={isActive('/now') || undefined} href={`${base}now`}>now</a>
-        <button id="theme-btn" aria-label="Toggle theme" class="hairline rounded-full w-8 h-8 grid place-items-center hover:border-(--p-acc) transition-colors">◐</button>
         <div class="pal-wrap">
-          <button id="pal-btn" aria-label="Choose palette" aria-haspopup="true" class="hairline rounded-full h-8 px-3 grid place-items-center font-mono text-[11px] hover:border-(--p-acc) transition-colors">palette</button>
+          <button id="pal-btn" aria-label="Choose palette and theme" aria-haspopup="true" class="hairline rounded-full h-8 px-3 grid place-items-center font-mono text-[11px] hover:border-(--p-acc) transition-colors">palette</button>
           <div id="pal-menu" class="pal-menu hidden" role="menu"></div>
         </div>
       </div>
@@ -75,40 +74,34 @@ const isHome = here === norm(base);
     // and duplicate document listeners would double-fire (toggle twice = dead)
     if (!window.__zanBase) {
     window.__zanBase = true;
-    // delegated: survives view-transition swaps
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest?.('#theme-btn')) return;
-      const el = document.documentElement;
-      el.classList.toggle('dark');
-      try { localStorage.setItem('zan-theme', el.classList.contains('dark') ? 'dark' : 'light'); } catch {}
-    });
-    addEventListener('scroll', () => {
-      const bar = document.getElementById('progress');
-      if (!bar) return;
-      const h = document.documentElement;
-      const p = h.scrollTop / (h.scrollHeight - h.clientHeight || 1);
-      bar.style.transform = `scaleX(${p})`;
-    }, { passive: true });
-    // palette switcher menu (delegated: survives view-transition swaps)
+    // palette + theme switcher menu (delegated: survives view-transition swaps)
     const buildPalMenu = () => {
       const menu = document.getElementById('pal-menu');
       if (!menu || !window.ZAN) return;
-      menu.innerHTML = window.ZAN.order.map((id) => {
+      const themeRow = window.ZAN.themes.map((id) => {
+        const on = window.ZAN.theme() === id;
+        return `<button class="pal-item" role="menuitemradio" data-theme="${id}">
+          <span>${window.ZAN.themeLabels[id]}</span>
+          <span class="ml-auto opacity-50">${on ? '●' : ''}</span></button>`;
+      }).join('');
+      const palRow = window.ZAN.order.map((id) => {
         const dots = window.ZAN.palettes[id].map((c) => `<i style="background:${c}"></i>`).join('');
         const on = window.ZAN.current() === id;
-        return `<button class="pal-item" role="menuitem" data-pal="${id}">
+        return `<button class="pal-item" role="menuitemradio" data-pal="${id}">
           <span class="pal-dots">${dots}</span><span>${window.ZAN.labels[id]}</span>
           <span class="ml-auto opacity-50">${on ? '●' : ''}</span></button>`;
       }).join('');
+      menu.innerHTML = `<p class="pal-head">theme</p>${themeRow}<p class="pal-head">palette</p>${palRow}`;
     };
     document.addEventListener('click', (e) => {
       const btn = e.target.closest?.('#pal-btn');
-      const item = e.target.closest?.('.pal-item');
+      const pal = e.target.closest?.('.pal-item[data-pal]');
+      const th = e.target.closest?.('.pal-item[data-theme]');
       const menu = document.getElementById('pal-menu');
-      if (item && window.ZAN) {
-        window.ZAN.apply(item.dataset.pal);
+      if ((pal || th) && window.ZAN) {
+        if (pal) window.ZAN.apply(pal.dataset.pal);
+        if (th) window.ZAN.applyTheme(th.dataset.theme);
         buildPalMenu();
-        menu?.classList.add('hidden');
         return;
       }
       if (btn) {
@@ -118,6 +111,14 @@ const isHome = here === norm(base);
       }
       if (!e.target.closest?.('.pal-wrap')) menu?.classList.add('hidden');
     });
+    addEventListener('scroll', () => {
+      const bar = document.getElementById('progress');
+      if (!bar) return;
+      const h = document.documentElement;
+      const p = h.scrollTop / (h.scrollHeight - h.clientHeight || 1);
+      bar.style.transform = `scaleX(${p})`;
+    }, { passive: true });
+    // palette switcher menu (delegated: survives view-transition swaps)
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') document.getElementById('pal-menu')?.classList.add('hidden');
     });

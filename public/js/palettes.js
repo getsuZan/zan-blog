@@ -11,6 +11,21 @@
   };
   const ORDER = ['royal', 'neon', 'midnight', 'sunset'];
   const LABELS = { royal: 'Royal', neon: 'Neon', midnight: 'Midnight', sunset: 'Sunset' };
+  const THEMES = ['dark', 'light'];
+  const THEME_LABELS = { dark: 'Dark', light: 'Light' };
+
+  function theme() {
+    try {
+      const v = localStorage.getItem('zan-theme');
+      if (v === 'light' || v === 'dark') return v;
+    } catch {}
+    return 'dark';
+  }
+  function applyTheme(t) {
+    if (t !== 'light' && t !== 'dark') t = 'dark';
+    document.documentElement.classList.toggle('dark', t !== 'light');
+    try { localStorage.setItem('zan-theme', t); } catch {}
+  }
 
   function current() {
     try {
@@ -29,10 +44,15 @@
     palettes: PIECES,
     order: ORDER,
     labels: LABELS,
+    themes: THEMES,
+    themeLabels: THEME_LABELS,
     current,
     apply,
+    theme,
+    applyTheme,
     pieces() { return PIECES[current()] || PIECES.royal; },
   };
-  // early apply (script loads in <head>): no flash of wrong palette
+  // early apply (script loads in <head>): no flash of wrong palette/theme
   document.documentElement.dataset.pal = current();
+  document.documentElement.classList.toggle('dark', theme() !== 'light');
 })();
