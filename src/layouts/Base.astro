@@ -71,6 +71,10 @@ const isHome = here === norm(base);
     </div>
   </footer>
   <script is:inline>
+    // bind once: this layout script re-runs after every view-transition swap,
+    // and duplicate document listeners would double-fire (toggle twice = dead)
+    if (!window.__zanBase) {
+    window.__zanBase = true;
     // delegated: survives view-transition swaps
     document.addEventListener('click', (e) => {
       if (!e.target.closest?.('#theme-btn')) return;
@@ -118,6 +122,8 @@ const isHome = here === norm(base);
       if (e.key === 'Escape') document.getElementById('pal-menu')?.classList.add('hidden');
     });
     document.addEventListener('astro:after-swap', buildPalMenu);
+    document.addEventListener('zan:pal', () => { try { window.__blogPaint?.(); } catch {} });
+    } // __zanBase
   </script>
 </body>
 </html>

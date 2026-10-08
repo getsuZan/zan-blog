@@ -89,7 +89,7 @@ const searchOf = (p: (typeof all)[number]) =>
         render();
       });
       q?.addEventListener('input', render);
-      document.addEventListener('zan:pal', paint);
+      window.__blogPaint = paint; // Base re-calls this on palette switch (single listener)
       render();
     }
     initBlog();

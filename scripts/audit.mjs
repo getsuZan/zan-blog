@@ -98,6 +98,17 @@ console.log('lifecycle:');
     }
   }
   if (fragile === 0) ok('no direct swap-fragile bindings');
+  // layout/background scripts must bind document listeners exactly once
+  const once = [
+    ['src/layouts/Base.astro', '__zanBase'],
+    ['src/components/TetrisBackground.astro', '__tetriBg'],
+    ['src/components/TetrominoDivider.astro', '__tetriSep'],
+  ];
+  for (const [f, flag] of once) {
+    readFileSync(join(src, f.replace('src/', '')), 'utf8').includes(flag)
+      ? ok(`${f} guarded (${flag})`)
+      : fail(`${f} missing once-guard ${flag}`);
+  }
 }
 
 // 7. contrast: palette text colors on their surfaces must be >= 4.5
