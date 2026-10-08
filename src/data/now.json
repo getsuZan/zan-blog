@@ -1,0 +1,12 @@
+{
+  "updated": "2026-10-01",
+  "status": "Reading + listening placeholder — replace with your own.",
+  "music": [
+    { "title": "Placeholder Album One", "artist": "Lorem Artist", "note": "Evening coding loop" },
+    { "title": "Placeholder EP Two", "artist": "Ipsum Band", "note": "Rainy-day synths" }
+  ],
+  "reading": [
+    { "title": "Lorem Ipsum Manga Vol. 1", "author": "A. Author", "kind": "manga", "progress": "ch. 12" },
+    { "title": "Dolor Sit Research Methods", "author": "B. Writer", "kind": "book", "progress": "p. 84" }
+  ]
+}

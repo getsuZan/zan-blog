@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+@theme {
+  --color-void: #0e0b16;
+  --color-panel: #161224;
+  --color-line: rgba(255, 255, 255, 0.1);
+  --color-ink: #ece9f7;
+  --color-muted: #a79fc4;
+  --color-violet-glow: #8b7cf6;
+  --color-mint: #7de8c0;
+  --color-amber-soft: #ffc86b;
+  --color-paper: #faf9ff;
+  --color-paper-ink: #221d38;
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+html { scroll-behavior: smooth; }
+body { @apply antialiased; font-family: var(--font-body); }
+::selection { background: #8b7cf6; color: white; }
+
+/* fine 1px hairlines */
+.hairline { border: 1px solid var(--color-line); }
+.dotgrid {
+  background-image: radial-gradient(rgba(139, 124, 246, 0.16) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* nav slide underline */
+.navlink { position: relative; }
+.navlink::after {
+  content: ""; position: absolute; left: 0; bottom: -4px; height: 1px; width: 100%;
+  background: linear-gradient(90deg, #8b7cf6, #7de8c0);
+  transform: scaleX(0); transform-origin: left;
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.navlink:hover::after, .navlink[data-active="true"]::after { transform: scaleX(1); }
+
+/* cards */
+.card { transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease; }
+.card:hover { transform: translateY(-2px); border-color: rgba(139, 124, 246, 0.45); box-shadow: 0 8px 30px -12px rgba(139, 124, 246, 0.35); }
+
+/* view transitions */
+@view-transition { navigation: auto; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: 220ms; }
+
+/* prose */
+.prose-zan { max-width: 68ch; line-height: 1.75; }
+.prose-zan h2 { font-family: var(--font-display); margin: 2em 0 0.6em; font-size: 1.5rem; }
+.prose-zan p { margin: 1em 0; }
+.prose-zan a { color: #8b7cf6; text-decoration: underline; text-underline-offset: 3px; }
+.prose-zan code { font-family: var(--font-mono); font-size: 0.85em; background: rgba(139,124,246,.12); padding: 0.15em 0.4em; border-radius: 6px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  html { scroll-behavior: auto; }
+}

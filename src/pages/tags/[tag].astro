@@ -1,0 +1,22 @@
+---
+import Base from '../../layouts/Base.astro';
+import PostCard from '../../components/PostCard.astro';
+import { getCollection } from 'astro:content';
+export async function getStaticPaths() {
+  const items = await getCollection('posts', ({ data }) => !data.draft);
+  const tags = [...new Set(items.flatMap(p => p.data.tags))];
+  return tags.map(tag => ({ params: { tag }, props: { tag } }));
+}
+import { getCollection as gc } from 'astro:content';
+const { tag } = Astro.props;
+const items = (await gc('posts', ({ data }) => !data.draft && data.tags.includes(tag)))
+  .sort((a, b) => +b.data.date - +a.data.date);
+const fmt = (d: Date) => d.toISOString().slice(0, 10);
+const base = import.meta.env.BASE_URL;
+---
+<Base title={`#${tag} — zan-blog`}>
+  <h1 class="text-3xl font-bold" style="font-family: var(--font-display)">#{tag}</h1>
+  <div class="mt-5 grid gap-3">
+    {items.map(p => <PostCard title={p.data.title} href={`${base}blog/${p.slug}`} date={fmt(p.data.date)} excerpt={p.data.excerpt} tags={p.data.tags} />)}
+  </div>
+</Base>

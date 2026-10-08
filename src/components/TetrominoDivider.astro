@@ -1,0 +1,17 @@
+---
+// Subtle tetromino divider: thin line + small blocks. Not flashy.
+interface Props { variant?: number; }
+const { variant = 0 } = Astro.props;
+const blocks = [
+  [{x:0,c:'#8B7CF6'},{x:1,c:'#8B7CF6'},{x:2,c:'#8B7CF6'},{x:3,c:'#7DE8C0'}],
+  [{x:0,c:'#7DE8C0'},{x:1,c:'#8B7CF6'},{x:2,c:'#FFC86B'}],
+  [{x:0,c:'#8B7CF6'},{x:1,c:'#8B7CF6'},{x:2,c:'#7DE8C0'},{x:3,c:'#8B7CF6'}],
+][variant % 3];
+---
+<div class="flex items-center gap-3 my-8" aria-hidden="true">
+  <div class="h-px flex-1 bg-black/10 dark:bg-white/10"></div>
+  <div class="flex gap-[3px]">
+    {blocks.map(b => <span class="inline-block w-2.5 h-2.5 rounded-[3px] opacity-70" style={`background:${b.c}`} />)}
+  </div>
+  <div class="h-px flex-1 bg-black/10 dark:bg-white/10"></div>
+</div>

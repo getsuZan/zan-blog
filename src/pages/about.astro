@@ -1,0 +1,15 @@
+---
+import Base from '../layouts/Base.astro';
+import TetrominoDivider from '../components/TetrominoDivider.astro';
+---
+<Base title="about — zan-blog" description="About the author.">
+  <h1 class="text-3xl font-bold" style="font-family: var(--font-display)">about</h1>
+  <p class="mt-3 prose-zan text-black/70 dark:text-white/70">Lorem ipsum dolor sit amet — replace with your bio: who you are, what you study or build, what this blog covers. Keep it short; link socials when ready (see <code>src/data/socials.json</code>).</p>
+  <TetrominoDivider variant={1} />
+  <h2 class="font-semibold" style="font-family: var(--font-display)">interests</h2>
+  <ul class="mt-2 text-sm space-y-1 text-black/70 dark:text-white/70">
+    <li>— lorem: topic one</li>
+    <li>— ipsum: topic two</li>
+    <li>— dolor: tetris, obviously</li>
+  </ul>
+</Base>
