@@ -1,0 +1,153 @@
+---
+// Global ambient background: endless technical-blueprint Tetris board.
+// Faint game-board grid + a few large outline-only pieces with
+// construction lines (bounding box, center cross, dimension ticks).
+// Pieces drift diagonally forever, wrap around edges, never finish.
+// Respects prefers-reduced-motion (one static frame).
+---
+<canvas id="tetri-bg" class="fixed inset-0 pointer-events-none" aria-hidden="true"></canvas>
+<script is:inline>
+  (() => {
+    const SHAPES = [
+      [[1, 1, 1, 1]], [[1, 1], [1, 1]],
+      [[0, 1, 0], [1, 1, 1]], [[0, 1, 1], [1, 1, 0]],
+      [[1, 1, 0], [0, 1, 1]], [[1, 0, 0], [1, 1, 1]], [[0, 0, 1], [1, 1, 1]],
+    ];
+    const COLORS = null; // live palette vars (--p-p0..4)
+    const palColors = () => {
+      const cs = getComputedStyle(document.documentElement);
+      const out = [];
+      for (let i = 0; i < 5; i++) out.push(cs.getPropertyValue(`--p-p${i}`).trim() || '#A855F7');
+      return out;
+    };
+    let PAL = palColors();
+    const DPR = Math.min(devicePixelRatio || 1, 1.5);
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let raf = 0, W = 0, H = 0, pieces = [];
+
+    const spawn = (anywhere) => {
+      const shape = SHAPES[(Math.random() * SHAPES.length) | 0];
+      const cell = (38 + Math.random() * 14) * DPR;
+      const w = shape[0].length * cell, h = shape.length * cell;
+      return {
+        shape, cell,
+        x: anywhere ? Math.random() * W : Math.random() * (W + 200 * DPR) - 100 * DPR,
+        y: anywhere ? Math.random() * H : -h - 20,
+        vx: (Math.random() - 0.3) * 0.2 * DPR,
+        vy: (0.12 + Math.random() * 0.18) * DPR,
+        a: (Math.random() - 0.5) * 0.6,
+        va: (Math.random() - 0.5) * 0.002,
+        color: PAL[(Math.random() * PAL.length) | 0],
+        alpha: 0.13 + Math.random() * 0.09,
+      };
+    };
+
+    // game-board grid, always neutral gray: fine lines + stronger majors
+    const grid = (ctx) => {
+      const g = 48 * DPR;
+      ctx.lineWidth = 1;
+      for (let x = 0.5; x < W; x += g) {
+        const major = Math.round(x / g) % 5 === 0;
+        ctx.strokeStyle = major ? 'rgba(135,138,155,0.11)' : 'rgba(135,138,155,0.055)';
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+      }
+      for (let y = 0.5; y < H; y += g) {
+        const major = Math.round(y / g) % 5 === 0;
+        ctx.strokeStyle = major ? 'rgba(135,138,155,0.11)' : 'rgba(135,138,155,0.055)';
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+      }
+    };
+
+    // one blueprint piece: outline cells + dashed bounding box + center cross + ticks
+    const piece = (ctx, p) => {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.a);
+      ctx.globalAlpha = p.alpha;
+      ctx.strokeStyle = p.color;
+      ctx.lineWidth = 1.5 * DPR;
+      const cols = p.shape[0].length, rows = p.shape.length;
+      const ox = -(cols * p.cell) / 2, oy = -(rows * p.cell) / 2;
+      // flush cells, no gaps: interior lines stay continuous
+      p.shape.forEach((row, y) => row.forEach((v, x) => {
+        if (!v) return;
+        ctx.strokeRect(ox + x * p.cell, oy + y * p.cell, p.cell, p.cell);
+      }));
+      // dashed construction bounding box
+      ctx.setLineDash([5 * DPR, 4 * DPR]);
+      ctx.globalAlpha = p.alpha * 0.7;
+      const m = 10 * DPR;
+      ctx.strokeRect(ox - m, oy - m, cols * p.cell + m * 2, rows * p.cell + m * 2);
+      ctx.setLineDash([]);
+      // center crosshair
+      ctx.globalAlpha = p.alpha * 0.8;
+      const c = 7 * DPR;
+      ctx.beginPath();
+      ctx.moveTo(-c, 0); ctx.lineTo(c, 0);
+      ctx.moveTo(0, -c); ctx.lineTo(0, c);
+      ctx.stroke();
+      // dimension ticks on bounding box corners
+      ctx.globalAlpha = p.alpha * 0.9;
+      const t = 6 * DPR, x0 = ox - m, y0 = oy - m, x1 = ox + cols * p.cell + m, y1 = oy + rows * p.cell + m;
+      ctx.beginPath();
+      [[x0, y0, 1, 1], [x1, y0, -1, 1], [x0, y1, 1, -1], [x1, y1, -1, -1]].forEach(([x, y, dx, dy]) => {
+        ctx.moveTo(x, y); ctx.lineTo(x + dx * t, y);
+        ctx.moveTo(x, y); ctx.lineTo(x, y + dy * t);
+      });
+      ctx.stroke();
+      ctx.restore();
+      ctx.globalAlpha = 1;
+    };
+
+    const draw = (ctx) => {
+      ctx.clearRect(0, 0, W, H);
+      grid(ctx);
+      pieces.forEach((p) => piece(ctx, p));
+    };
+
+    const frame = () => {
+      const canvas = document.getElementById('tetri-bg');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      pieces.forEach((p) => {
+        p.x += p.vx; p.y += p.vy; p.a += p.va;
+        const w = p.shape[0].length * p.cell, h = p.shape.length * p.cell;
+        // wrap around: never finishes, pieces cycle forever
+        if (p.y - h > H + 40) { Object.assign(p, spawn(false), { y: -h - 20 }); }
+        if (p.x - w > W + 60) p.x = -w - 40;
+        if (p.x + w < -60) p.x = W + 40;
+      });
+      draw(ctx);
+      raf = requestAnimationFrame(frame);
+    };
+
+    const init = () => {
+      cancelAnimationFrame(raf);
+      const canvas = document.getElementById('tetri-bg');
+      if (!canvas) return;
+      W = canvas.width = innerWidth * DPR;
+      H = canvas.height = innerHeight * DPR;
+      canvas.style.width = innerWidth + 'px';
+      canvas.style.height = innerHeight + 'px';
+      const n = Math.max(5, Math.min(7, Math.floor((innerWidth * innerHeight) / 220000)));
+      pieces = Array.from({ length: reduced ? 6 : n }, () => spawn(true));
+      if (reduced) {
+        const ctx = canvas.getContext('2d');
+        draw(ctx);
+      } else {
+        raf = requestAnimationFrame(frame);
+      }
+    };
+
+    addEventListener('resize', init);
+    document.addEventListener('astro:after-swap', init);
+    document.addEventListener('zan:pal', () => {
+      PAL = palColors();
+      pieces.forEach((p) => { p.color = PAL[(Math.random() * PAL.length) | 0]; });
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (!reduced && !document.hidden && !raf) raf = requestAnimationFrame(frame);
+    });
+    init();
+  })();
+</script>

@@ -7,7 +7,7 @@ const posts = defineCollection({
     date: z.coerce.date(),
     excerpt: z.string(),
     tags: z.array(z.string()).default([]),
-    type: z.enum(['post', 'research']).default('post'),
+    type: z.enum(['post', 'opinion']).default('post'),
     draft: z.boolean().default(false),
     link: z.string().optional(),
     cover: z.string().optional(),

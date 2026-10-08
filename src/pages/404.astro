@@ -5,13 +5,13 @@ const base = import.meta.env.BASE_URL;
 <Base title="404 — zan-blog">
   <div class="text-center py-16">
     <div class="flex justify-center gap-1.5" aria-hidden="true">
-      <span class="w-4 h-4 rounded bg-[#8B7CF6]"></span>
-      <span class="w-4 h-4 rounded bg-[#8B7CF6]/60"></span>
-      <span class="w-4 h-4 rounded bg-[#7DE8C0]/80"></span>
-      <span class="w-4 h-4 rounded bg-[#FFC86B]/70"></span>
+      <span class="w-4 h-4 rounded" style="background:var(--p-p0)"></span>
+      <span class="w-4 h-4 rounded opacity-70" style="background:var(--p-p1)"></span>
+      <span class="w-4 h-4 rounded opacity-80" style="background:var(--p-p2)"></span>
+      <span class="w-4 h-4 rounded opacity-70" style="background:var(--p-p3)"></span>
     </div>
     <h1 class="mt-4 text-3xl font-bold" style="font-family: var(--font-display)">line clear — page gone</h1>
     <p class="mt-2 font-mono text-sm opacity-60">404 · block not found</p>
-    <a href={base} class="mt-6 inline-block hairline rounded-lg px-4 py-2 text-sm hover:border-[#8B7CF6]">← home</a>
+    <a href={base} class="mt-6 inline-block hairline rounded px-4 py-2 text-sm hover:border-(--p-acc)">← home</a>
   </div>
 </Base>

@@ -1,56 +1,99 @@
 ---
 import Base from '../../layouts/Base.astro';
+import PostCard from '../../components/PostCard.astro';
 import { getCollection } from 'astro:content';
 const all = (await getCollection('posts', ({ data }) => !data.draft && data.type === 'post'))
   .sort((a, b) => +b.data.date - +a.data.date);
 const fmt = (d: Date) => d.toISOString().slice(0, 10);
 const base = import.meta.env.BASE_URL;
 const tags = [...new Set(all.flatMap(p => p.data.tags))].sort();
-const payload = all.map(p => ({ slug: p.slug, title: p.data.title, excerpt: p.data.excerpt, date: fmt(p.data.date), tags: p.data.tags }));
+const searchOf = (p: (typeof all)[number]) =>
+  `${p.data.title} ${p.data.excerpt} ${p.data.tags.join(' ')}`.toLowerCase();
 ---
 <Base title="blog — zan-blog" description="All blog posts.">
   <h1 class="text-3xl font-bold" style="font-family: var(--font-display)">blog</h1>
-  <div class="mt-4 flex flex-col sm:flex-row gap-2">
-    <input id="q" type="search" placeholder="search posts…" class="hairline rounded-lg px-3 py-2 bg-transparent text-sm flex-1 outline-none focus:border-[#8B7CF6]" />
-    <div id="tagrow" class="flex flex-wrap gap-1.5 font-mono text-[11px]">
-      <button data-tag="" class="tagbtn px-2 py-1 rounded-full border border-[#8B7CF6] text-[#8B7CF6]">all</button>
+  <div class="mt-4 flex flex-col gap-3">
+    <input id="q" type="search" placeholder="search posts…" class="hairline rounded px-3 py-2 bg-transparent text-sm w-full outline-none focus:border-(--p-acc)" />
+    <div id="tagrow" class="tagrow flex gap-1.5 font-mono text-[11px] overflow-x-auto whitespace-nowrap pb-1">
+      <button data-tag="" class="tagbtn px-2 py-1 rounded-full border border-(--p-acc) text-(--p-acc)">all</button>
       {tags.map(t => <button data-tag={t} class="tagbtn px-2 py-1 rounded-full border border-black/15 dark:border-white/15 opacity-70">#{t}</button>)}
     </div>
   </div>
-  <div id="list" class="mt-5 grid gap-3"></div>
+  <p id="blogcount" class="mt-3 font-mono text-xs opacity-50" aria-live="polite"></p>
+  <div id="list" class="mt-4 grid gap-3">
+    {all.map(p => (
+      <div class="tx-item" data-tags={p.data.tags.join(',')} data-search={searchOf(p)}>
+        <PostCard title={p.data.title} href={`${base}blog/${p.slug}`} date={fmt(p.data.date)} excerpt={p.data.excerpt} tags={p.data.tags} />
+      </div>
+    ))}
+  </div>
   <p id="empty" class="hidden mt-6 font-mono text-sm opacity-60">no posts match.</p>
-  <script is:inline define:vars={{ payload, base }}>
-    const list = document.getElementById('list');
-    const q = document.getElementById('q');
-    const empty = document.getElementById('empty');
-    let tag = new URLSearchParams(location.search).get('tag') || '';
-    if (q) q.value = new URLSearchParams(location.search).get('q') || '';
-    const btns = [...document.querySelectorAll('.tagbtn')];
-    function paint() {
-      btns.forEach(b => {
-        const on = (b.dataset.tag || '') === tag;
-        b.style.borderColor = on ? '#8B7CF6' : '';
-        b.style.color = on ? '#8B7CF6' : '';
-        b.style.opacity = on ? '1' : '';
+  <script is:inline>
+    function initBlog() {
+      const list = document.getElementById('list');
+      if (!list || list.dataset.ready) return;
+      list.dataset.ready = '1';
+      const q = document.getElementById('q');
+      const empty = document.getElementById('empty');
+      const count = document.getElementById('blogcount');
+      const row = document.getElementById('tagrow');
+      const items = [...list.querySelectorAll('.tx-item')];
+      if (q) q.value = new URLSearchParams(location.search).get('q') || '';
+      const params = new URLSearchParams(location.search);
+      const selected = new Set(
+        (params.get('tags') || params.get('tag') || '').split(',').map(s => s.trim()).filter(Boolean)
+      );
+      const acc = () => getComputedStyle(document.documentElement).getPropertyValue('--p-acc').trim() || '#A855F7';
+      const paint = () => {
+        const a = acc();
+        row?.querySelectorAll('.tagbtn').forEach((b) => {
+          const t = b.dataset.tag || '';
+          const on = t === '' ? selected.size === 0 : selected.has(t);
+          b.style.borderColor = on ? a : '';
+          b.style.color = on ? a : '';
+          b.style.opacity = on ? '1' : '';
+          b.style.background = on && t !== '' ? 'color-mix(in srgb, var(--p-acc) 8%, transparent)' : '';
+        });
+      };
+      const syncUrl = () => {
+        const u = new URL(location.href);
+        if (selected.size === 0) u.searchParams.delete('tags');
+        else u.searchParams.set('tags', [...selected].join(','));
+        u.searchParams.delete('tag');
+        history.replaceState(null, '', u);
+      };
+      const render = () => {
+        const needle = (q?.value || '').toLowerCase();
+        let shown = 0;
+        items.forEach((el) => {
+          const tags = (el.dataset.tags || '').split(',').filter(Boolean);
+          const hitTag = selected.size === 0 || tags.some(t => selected.has(t));
+          const hitQ = !needle || (el.dataset.search || '').includes(needle);
+          const show = hitTag && hitQ;
+          el.classList.toggle('hidden', !show);
+          if (show) shown++;
+        });
+        empty?.classList.toggle('hidden', shown > 0);
+        if (count) count.textContent = `showing ${shown} of ${items.length}${selected.size ? ` · ${selected.size} tag${selected.size > 1 ? 's' : ''}` : ''}`;
+        paint();
+      };
+      // delegated: survives re-renders and view transitions
+      row?.addEventListener('click', (e) => {
+        const b = e.target.closest?.('.tagbtn');
+        if (!b) return;
+        const t = b.dataset.tag || '';
+        if (t === '') selected.clear();
+        else if (selected.has(t)) selected.delete(t);
+        else selected.add(t);
+        syncUrl();
+        render();
       });
+      q?.addEventListener('input', render);
+      document.addEventListener('zan:pal', paint);
+      render();
     }
-    function render() {
-      const needle = (q?.value || '').toLowerCase();
-      const rows = payload.filter(p =>
-        (!tag || p.tags.includes(tag)) &&
-        (!needle || (p.title + ' ' + p.excerpt + ' ' + p.tags.join(' ')).toLowerCase().includes(needle)));
-      list.innerHTML = rows.map(p => `
-        <a href="${base}blog/${p.slug}" class="card hairline rounded-xl p-5 block bg-white/70 dark:bg-white/[0.03]">
-          <div class="font-mono text-[11px] uppercase tracking-wider opacity-50"><time>${p.date}</time></div>
-          <h3 class="mt-1 text-lg font-semibold">${p.title}</h3>
-          <p class="mt-1 text-sm opacity-60">${p.excerpt}</p>
-          <div class="mt-3 flex flex-wrap gap-1.5 font-mono text-[11px]">${p.tags.map(t => `<span class="px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">#${t}</span>`).join('')}</div>
-        </a>`).join('');
-      empty.classList.toggle('hidden', rows.length > 0);
-      paint();
-    }
-    btns.forEach(b => b.addEventListener('click', () => { tag = b.dataset.tag || ''; render(); }));
-    q?.addEventListener('input', render);
-    render();
+    initBlog();
+    document.addEventListener('astro:after-swap', initBlog);
+    document.addEventListener('astro:page-load', initBlog);
   </script>
 </Base>

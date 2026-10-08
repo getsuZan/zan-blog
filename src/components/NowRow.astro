@@ -1,0 +1,15 @@
+---
+// Single now-list row. marker "gt" (listening) or "tab" (reading bookmark).
+interface Props { index: string; title: string; sub: string; extra?: string; marker?: 'gt' | 'tab'; }
+const { index, title, sub, extra, marker = 'gt' } = Astro.props;
+---
+<li class="flex items-baseline gap-3 py-4 border-b border-black/10 dark:border-white/10">
+  <span class="font-mono text-xs opacity-40">{index}</span>
+  {marker === 'tab'
+    ? <span class="bkm" aria-hidden="true"><i></i><i></i><i></i></span>
+    : <span class="font-mono text-sm text-(--p-tx)" aria-hidden="true">&gt;</span>}
+  <div class="flex-1">
+    <div class="font-medium">{title}{extra && <span class="font-mono text-[11px] opacity-50"> [{extra}]</span>}</div>
+    <div class="mt-0.5 text-sm opacity-60">{sub}</div>
+  </div>
+</li>

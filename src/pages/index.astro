@@ -2,61 +2,59 @@
 import Base from '../layouts/Base.astro';
 import PostCard from '../components/PostCard.astro';
 import TetrominoDivider from '../components/TetrominoDivider.astro';
-import HeroBlocks from '../components/HeroBlocks.astro';
 import { getCollection } from 'astro:content';
 import now from '../data/now.json';
 
 const all = (await getCollection('posts', ({ data }) => !data.draft))
   .sort((a, b) => +b.data.date - +a.data.date);
 const posts = all.filter(e => e.data.type === 'post').slice(0, 3);
-const research = all.filter(e => e.data.type === 'research').slice(0, 3);
+const opinions = all.filter(e => e.data.type === 'opinion').slice(0, 3);
 const fmt = (d: Date) => d.toISOString().slice(0, 10);
 const base = import.meta.env.BASE_URL;
 ---
-<Base title="zan-blog — notes on interests & research">
+<Base title="zan-blog — notes on interests & opinions">
   <section>
-    <p class="font-mono text-xs uppercase tracking-widest text-[#8B7CF6]">personal blog · interests + research</p>
+    <p class="font-mono text-xs uppercase tracking-widest text-(--p-comp)">personal blog</p>
     <h1 class="mt-2 text-4xl font-bold tracking-tight" style="font-family: var(--font-display)">zan-blog</h1>
-    <p class="mt-2 text-black/60 dark:text-white/60">Personal interests and recent research topics I liked. Fine lines, soft purple, a quiet Tetris accent.</p>
-    <div class="mt-5"><HeroBlocks /></div>
+    <p class="mt-2 text-black/60 dark:text-white/60">Personal interests and recent opinion pieces I liked. Fine lines, soft purple, a quiet Tetris drift behind everything.</p>
   </section>
 
-  <TetrominoDivider variant={0} />
+  <TetrominoDivider />
   <section>
     <div class="flex items-baseline justify-between">
       <h2 class="text-xl font-semibold" style="font-family: var(--font-display)">Recent posts</h2>
-      <a class="font-mono text-xs hover:text-[#8B7CF6]" href={`${base}blog`}>all →</a>
+      <a class="font-mono text-xs hover:text-(--p-acc)" href={`${base}blog`}>all →</a>
     </div>
     <div class="mt-4 grid gap-3">
       {posts.map(p => <PostCard title={p.data.title} href={`${base}blog/${p.slug}`} date={fmt(p.data.date)} excerpt={p.data.excerpt} tags={p.data.tags} />)}
     </div>
   </section>
 
-  <TetrominoDivider variant={1} />
+  <TetrominoDivider />
   <section>
     <div class="flex items-baseline justify-between">
-      <h2 class="text-xl font-semibold" style="font-family: var(--font-display)">Recent research</h2>
-      <a class="font-mono text-xs hover:text-[#8B7CF6]" href={`${base}research`}>all →</a>
+      <h2 class="text-xl font-semibold" style="font-family: var(--font-display)">Recent opinions</h2>
+      <a class="font-mono text-xs hover:text-(--p-acc)" href={`${base}opinions`}>all →</a>
     </div>
     <div class="mt-4 grid gap-3">
-      {research.map(p => <PostCard title={p.data.title} href={`${base}blog/${p.slug}`} date={fmt(p.data.date)} excerpt={p.data.excerpt} tags={p.data.tags} badge="research" />)}
+      {opinions.map(p => <PostCard title={p.data.title} href={`${base}blog/${p.slug}`} date={fmt(p.data.date)} excerpt={p.data.excerpt} tags={p.data.tags} badge="opinion" />)}
     </div>
   </section>
 
-  <TetrominoDivider variant={2} />
+  <TetrominoDivider />
   <section>
     <div class="flex items-baseline justify-between">
       <h2 class="text-xl font-semibold" style="font-family: var(--font-display)">Now</h2>
-      <a class="font-mono text-xs hover:text-[#8B7CF6]" href={`${base}now`}>more →</a>
+      <a class="font-mono text-xs hover:text-(--p-acc)" href={`${base}now`}>more →</a>
     </div>
     <div class="mt-4 grid sm:grid-cols-2 gap-3">
-      <div class="hairline rounded-xl p-4 bg-white/70 dark:bg-white/[0.03]">
+      <div class="hairline rounded p-4 bg-white/70 dark:bg-white/[0.03]">
         <p class="font-mono text-[11px] uppercase tracking-widest text-black/50 dark:text-white/50">♪ listening</p>
         <ul class="mt-2 space-y-1.5 text-sm">
           {now.music.map(m => <li><span class="font-medium">{m.title}</span> <span class="text-black/50 dark:text-white/50">— {m.artist}</span></li>)}
         </ul>
       </div>
-      <div class="hairline rounded-xl p-4 bg-white/70 dark:bg-white/[0.03]">
+      <div class="hairline rounded p-4 bg-white/70 dark:bg-white/[0.03]">
         <p class="font-mono text-[11px] uppercase tracking-widest text-black/50 dark:text-white/50">▤ reading</p>
         <ul class="mt-2 space-y-1.5 text-sm">
           {now.reading.map(r => <li><span class="font-medium">{r.title}</span> <span class="text-black/50 dark:text-white/50">· {r.progress}</span></li>)}

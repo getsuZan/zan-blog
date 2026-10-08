@@ -1,17 +1,91 @@
 ---
-// Subtle tetromino divider: thin line + small blocks. Not flashy.
-interface Props { variant?: number; }
-const { variant = 0 } = Astro.props;
-const blocks = [
-  [{x:0,c:'#8B7CF6'},{x:1,c:'#8B7CF6'},{x:2,c:'#8B7CF6'},{x:3,c:'#7DE8C0'}],
-  [{x:0,c:'#7DE8C0'},{x:1,c:'#8B7CF6'},{x:2,c:'#FFC86B'}],
-  [{x:0,c:'#8B7CF6'},{x:1,c:'#8B7CF6'},{x:2,c:'#7DE8C0'},{x:3,c:'#8B7CF6'}],
-][variant % 3];
+// Randomized tetromino separator: every page load picks a different piece,
+// rotation and tint. SSR renders a quiet T fallback; client script re-rolls.
 ---
-<div class="flex items-center gap-3 my-8" aria-hidden="true">
+<div class="tetri-sep flex items-center gap-3 my-8" aria-hidden="true">
   <div class="h-px flex-1 bg-black/10 dark:bg-white/10"></div>
-  <div class="flex gap-[3px]">
-    {blocks.map(b => <span class="inline-block w-2.5 h-2.5 rounded-[3px] opacity-70" style={`background:${b.c}`} />)}
-  </div>
+  <span class="tetri-piece inline-grid gap-[2px]" style="grid-template-columns: repeat(3, 8px);">
+    <i></i><i style="background:var(--p-p1)"></i><i></i>
+    <i style="background:var(--p-p1)"></i><i style="background:var(--p-p1)"></i><i style="background:var(--p-p2)"></i>
+  </span>
   <div class="h-px flex-1 bg-black/10 dark:bg-white/10"></div>
 </div>
+<script is:inline>
+  (() => {
+    if (window.__tetriSep) return;
+    window.__tetriSep = true;
+    const SHAPES = [
+      [[1, 1, 1, 1]], [[1, 1], [1, 1]],
+      [[0, 1, 0], [1, 1, 1]], [[0, 1, 1], [1, 1, 0]],
+      [[1, 1, 0], [0, 1, 1]], [[1, 0, 0], [1, 1, 1]], [[0, 0, 1], [1, 1, 1]],
+    ];
+    const TINTS = null; // tints come from live palette vars (--p-p0..4)
+    const tint = () => {
+      const cs = getComputedStyle(document.documentElement);
+      const out = [];
+      for (let i = 0; i < 5; i++) out.push(cs.getPropertyValue(`--p-p${i}`).trim() || '#A855F7');
+      return out;
+    };
+    // easter egg: identical pieces everywhere -> confetti line-clear
+    const confetti = () => {
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const T = tint();
+      const c = document.createElement('canvas');
+      c.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:60';
+      document.body.appendChild(c);
+      const ctx = c.getContext('2d');
+      c.width = innerWidth; c.height = innerHeight;
+      const cols = [...T, '#ffffff'];
+      const ps = Array.from({ length: 140 }, () => ({
+        x: innerWidth / 2 + (Math.random() - 0.5) * 120,
+        y: innerHeight * 0.35,
+        vx: (Math.random() - 0.5) * 11, vy: -4 - Math.random() * 7,
+        s: 4 + Math.random() * 5, r: Math.random() * Math.PI,
+        vr: (Math.random() - 0.5) * 0.3,
+        col: cols[(Math.random() * cols.length) | 0],
+      }));
+      const t0 = performance.now();
+      (function tick() {
+        const t = performance.now() - t0;
+        ctx.clearRect(0, 0, c.width, c.height);
+        ps.forEach(p => {
+          p.x += p.vx; p.y += p.vy; p.vy += 0.28; p.r += p.vr;
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r);
+          ctx.fillStyle = p.col; ctx.fillRect(-p.s / 2, -p.s / 2, p.s, p.s * 0.6);
+          ctx.restore();
+        });
+        if (t < 2600) requestAnimationFrame(tick);
+        else c.remove();
+      })();
+    };
+    const roll = (celebrate) => {
+      const T = tint();
+      // every divider gets its own independent random piece
+      const seen = [];
+      document.querySelectorAll('.tetri-sep .tetri-piece').forEach((el) => {
+        const si = (Math.random() * SHAPES.length) | 0;
+        seen.push(si);
+        const shape = SHAPES[si];
+        const c = T[(Math.random() * T.length) | 0];
+        const rot = [0, 90, 180, 270][(Math.random() * 4) | 0];
+        el.style.gridTemplateColumns = `repeat(${shape[0].length}, 8px)`;
+        el.style.transform = `rotate(${rot}deg)`;
+        el.innerHTML = shape.flat().map((v) =>
+          v ? `<i style="width:8px;height:8px;border-radius:2px;background:${c};opacity:.75;display:block"></i>`
+            : `<i style="width:8px;height:8px;display:block"></i>`
+        ).join('');
+      });
+      if (celebrate && seen.length >= 2 && seen.every(s => s === seen[0])) confetti();
+    };
+    // deferred: first instance's script runs before later dividers are parsed,
+    // so wait for the full DOM before rolling
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => roll(true));
+    else roll(true);
+    document.addEventListener('astro:after-swap', () => roll(true));
+    document.addEventListener('zan:pal', () => roll(false));
+  })();
+</script>
+<style>
+  .tetri-piece i { width: 8px; height: 8px; display: block; }
+  .tetri-piece i[style*="background"] { border-radius: 2px; opacity: .75; }
+</style>

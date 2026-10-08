@@ -1,12 +1,18 @@
 ---
 import '../styles/global.css';
 import { ClientRouter } from 'astro:transitions';
+import TetrisBackground from '../components/TetrisBackground.astro';
 import socials from '../data/socials.json';
 
 interface Props { title?: string; description?: string; }
-const { title = 'zan-blog', description = 'Personal notes on interests and research.' } = Astro.props;
+const { title = 'zan-blog', description = 'Personal notes on interests and opinions.' } = Astro.props;
+const base = import.meta.env.BASE_URL;
 const path = Astro.url.pathname;
-const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWith(href));
+// base-aware active check (works with /zan-blog/ subpath)
+const norm = (p: string) => p.replace(/\/+$/, '') || '/';
+const here = norm(path);
+const isActive = (href: string) => here === norm(base + href.replace(/^\//, '')) || here.startsWith(norm(base + href.replace(/^\//, '')) + '/');
+const isHome = here === norm(base);
 ---
 <!doctype html>
 <html lang="en" class="dark">
@@ -15,10 +21,11 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWit
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{title}</title>
   <meta name="description" content={description} />
-  <link rel="icon" type="image/svg+xml" href={`${import.meta.env.BASE_URL}favicon.svg`} />
+  <link rel="icon" type="image/svg+xml" href={`${base}favicon.svg`} />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet" />
+  <script src={`${base}js/palettes.js`}></script>
   <ClientRouter />
   <script is:inline>
     try {
@@ -27,51 +34,90 @@ const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWit
     } catch {}
   </script>
 </head>
-<body class="bg-[#FAF9FF] text-[#221d38] dark:bg-[#0E0B16] dark:text-[#ece9f7] min-h-screen flex flex-col">
-  <div class="dotgrid fixed inset-0 pointer-events-none opacity-60 dark:opacity-40" aria-hidden="true"></div>
+<body class="bg-[#FAF9FF] text-[#221d38] dark:bg-[#0E0B16] dark:text-[#ece9f7] min-h-screen flex flex-col overflow-x-clip">
+  <TetrisBackground />
+  <div class="dotgrid fixed inset-0 pointer-events-none opacity-40 dark:opacity-25" aria-hidden="true"></div>
   <header class="relative z-10 border-b border-black/10 dark:border-white/10 backdrop-blur bg-white/60 dark:bg-[#0E0B16]/70 sticky top-0">
     <nav class="max-w-3xl mx-auto px-5 h-14 flex items-center justify-between font-mono text-sm">
-      <a href={import.meta.env.BASE_URL} class="flex items-center gap-2 font-bold tracking-tight" style="font-family: var(--font-display)">
-        <svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true"><rect x="1" y="1" width="8" height="8" rx="1.5" fill="#8B7CF6"/><rect x="11" y="1" width="8" height="8" rx="1.5" fill="#8B7CF6" opacity=".55"/><rect x="1" y="11" width="8" height="8" rx="1.5" fill="#7DE8C0" opacity=".8"/><rect x="11" y="11" width="8" height="8" rx="1.5" fill="#FFC86B" opacity=".7"/></svg>
-        zan-blog
+      <a href={base} class="tracking-tight text-[15px]" style="font-family: var(--font-display)" aria-label="zan-blog home">
+        <span class="font-bold">zan</span><span class="opacity-50">-blog</span>
       </a>
       <div class="flex items-center gap-5">
-        <a class="navlink" data-active={isActive('/blog')} href={`${import.meta.env.BASE_URL}blog`}>blog</a>
-        <a class="navlink" data-active={isActive('/research')} href={`${import.meta.env.BASE_URL}research`}>research</a>
-        <a class="navlink" data-active={isActive('/about')} href={`${import.meta.env.BASE_URL}about`}>about</a>
-        <a class="navlink" data-active={isActive('/now')} href={`${import.meta.env.BASE_URL}now`}>now</a>
-        <button id="theme-btn" aria-label="Toggle theme" class="hairline rounded-full w-8 h-8 grid place-items-center hover:border-[#8B7CF6] transition-colors">◐</button>
+        <a class="navlink" data-active={isActive('/blog') || undefined} href={`${base}blog`}>blog</a>
+        <a class="navlink" data-active={isActive('/opinions') || undefined} href={`${base}opinions`}>opns</a>
+        <a class="navlink" data-active={isActive('/about') || undefined} href={`${base}about`}>about</a>
+        <a class="navlink" data-active={isActive('/now') || undefined} href={`${base}now`}>now</a>
+        <button id="theme-btn" aria-label="Toggle theme" class="hairline rounded-full w-8 h-8 grid place-items-center hover:border-(--p-acc) transition-colors">◐</button>
+        <div class="pal-wrap">
+          <button id="pal-btn" aria-label="Choose palette" aria-haspopup="true" class="hairline rounded-full h-8 px-3 grid place-items-center font-mono text-[11px] hover:border-(--p-acc) transition-colors">palette</button>
+          <div id="pal-menu" class="pal-menu hidden" role="menu"></div>
+        </div>
       </div>
     </nav>
-    <div id="progress" class="h-[2px] w-full origin-left scale-x-0 bg-gradient-to-r from-[#8B7CF6] via-[#7DE8C0] to-[#FFC86B]"></div>
+    <div id="progress" class="h-[2px] w-full origin-left scale-x-0 bg-gradient-to-r from-(--p-acc) via-(--p-comp) to-(--p-warm)"></div>
   </header>
   <main class="relative z-10 flex-1 w-full max-w-3xl mx-auto px-5 py-10">
     <slot />
   </main>
   <footer class="relative z-10 border-t border-black/10 dark:border-white/10">
     <div class="max-w-3xl mx-auto px-5 py-6 flex items-center justify-between font-mono text-xs text-black/50 dark:text-white/50">
-      <span>© zan-blog · built with astro</span>
+      <span>© zan-blog</span>
       <span class="flex gap-3">
-        {socials.github && <a class="hover:text-[#8B7CF6]" href={socials.github}>gh</a>}
-        {socials.twitter && <a class="hover:text-[#8B7CF6]" href={socials.twitter}>tw</a>}
-        {socials.mastodon && <a class="hover:text-[#8B7CF6]" href={socials.mastodon}>mstdn</a>}
-        <a class="hover:text-[#8B7CF6]" href={`${import.meta.env.BASE_URL}rss.xml`}>rss</a>
+        {socials.github && <a class="hover:text-(--p-acc)" href={socials.github}>gh</a>}
+        {socials.twitter && <a class="hover:text-(--p-acc)" href={socials.twitter}>tw</a>}
+        {socials.mastodon && <a class="hover:text-(--p-acc)" href={socials.mastodon}>mstdn</a>}
+        <a class="hover:text-(--p-acc)" href={`${base}rss.xml`}>rss</a>
       </span>
     </div>
   </footer>
   <script is:inline>
-    const btn = document.getElementById('theme-btn');
-    btn?.addEventListener('click', () => {
+    // delegated: survives view-transition swaps
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest?.('#theme-btn')) return;
       const el = document.documentElement;
       el.classList.toggle('dark');
       try { localStorage.setItem('zan-theme', el.classList.contains('dark') ? 'dark' : 'light'); } catch {}
     });
-    const bar = document.getElementById('progress');
     addEventListener('scroll', () => {
+      const bar = document.getElementById('progress');
+      if (!bar) return;
       const h = document.documentElement;
       const p = h.scrollTop / (h.scrollHeight - h.clientHeight || 1);
-      if (bar) bar.style.transform = `scaleX(${p})`;
+      bar.style.transform = `scaleX(${p})`;
     }, { passive: true });
+    // palette switcher menu (delegated: survives view-transition swaps)
+    const buildPalMenu = () => {
+      const menu = document.getElementById('pal-menu');
+      if (!menu || !window.ZAN) return;
+      menu.innerHTML = window.ZAN.order.map((id) => {
+        const dots = window.ZAN.palettes[id].map((c) => `<i style="background:${c}"></i>`).join('');
+        const on = window.ZAN.current() === id;
+        return `<button class="pal-item" role="menuitem" data-pal="${id}">
+          <span class="pal-dots">${dots}</span><span>${window.ZAN.labels[id]}</span>
+          <span class="ml-auto opacity-50">${on ? '●' : ''}</span></button>`;
+      }).join('');
+    };
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest?.('#pal-btn');
+      const item = e.target.closest?.('.pal-item');
+      const menu = document.getElementById('pal-menu');
+      if (item && window.ZAN) {
+        window.ZAN.apply(item.dataset.pal);
+        buildPalMenu();
+        menu?.classList.add('hidden');
+        return;
+      }
+      if (btn) {
+        buildPalMenu();
+        menu?.classList.toggle('hidden');
+        return;
+      }
+      if (!e.target.closest?.('.pal-wrap')) menu?.classList.add('hidden');
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') document.getElementById('pal-menu')?.classList.add('hidden');
+    });
+    document.addEventListener('astro:after-swap', buildPalMenu);
   </script>
 </body>
 </html>

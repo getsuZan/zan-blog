@@ -3,11 +3,11 @@ import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
 import tailwindcss from '@tailwindcss/vite';
 
-// User site: https://getsuZan.github.io  -> base '/'
-// If switched to project page getsuZan.github.io/zan-blog, set base: '/zan-blog/'
+// Project page: https://getsuzan.github.io/zan-blog/ -> base '/zan-blog/'
+// If moved to user site <user>.github.io repo, set base: '/'
 export default defineConfig({
-  site: 'https://getsuZan.github.io',
-  base: '/',
+  site: 'https://getsuzan.github.io/zan-blog',
+  base: '/zan-blog/',
   integrations: [mdx(), sitemap()],
   vite: { plugins: [tailwindcss()] },
 });
